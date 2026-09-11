@@ -38,7 +38,7 @@ Implementation-ready planning document derived from the repository plan. This do
 | Component | Pin for CI and validation | Supported range |
 | --- | --- | --- |
 | Mojo | `1.0.0` | `>=1.0.0,<1.1.0` |
-| Flare | `v0.10.0` | `>=0.10.0,<0.11.0` |
+| Flare | git `main` | `>=0.10.0,<0.11.0` |
 | Pixi | `v0.70.2` | exact in CI |
 
 ## Research findings
@@ -131,7 +131,7 @@ Conclusion: keep a runtime renderer as an internal fallback path, not the primar
 
 ### Probe 4: annotation scanner fixture
 
-Local disposable probe showed that implicit association to the next top-level `def` is feasible without a general Mojo parser. The probe handled blank lines, decorators, multiline signature starts, multiple directives, fake directive text inside strings, and detected orphaned/nested cases.
+Local disposable probe showed that implicit association to the next top-level `def` or `struct` is feasible without a general Mojo parser. The probe handled blank lines, decorators, multiline signature starts, multiple directives, fake directive text inside strings, and detected orphaned/nested cases.
 
 Conclusion: choose implicit association.
 
@@ -182,6 +182,8 @@ comptime ROUTES: List[ComptimeRoute] = [
 
 Generated raising wrappers make the handler type uniform and explicit for `ComptimeRoute`, avoid relying on undocumented coercion edge cases, and allow one handler to be reused by multiple registrations.
 
+Typed extractor structs (`Copyable & Defaultable & Handler & Movable` with fields such as `PathInt["id"]`) are Flare's public `Extracted[H]` shape. `ComptimeRoute` can only store `def(Request) raises -> Response`, so the comptime renderer wraps those structs as `Extracted[H]().serve(req)`. The runtime fallback emits `router.get[Extracted[H]](path, Extracted[H]())`. The generator does not parse extractor fields; Flare's `Extracted` adapter does. Middleware (`Logger`, `RequestId`, `Cors`, ...) wraps the generated router in application code.
+
 ## Directive grammar
 
 ### Recommendation
@@ -203,7 +205,7 @@ wsp              = ( " " | "\t" ) , { " " | "\t" } ;
 ### Semantic rules
 
 - Directives are recognized only at top level
-- A directive applies to the next top-level `def`
+- A directive applies to the next top-level `def` or `struct`
 - Blank lines, ordinary comments, and top-level decorators may appear between directive and handler
 - Any non-blank, non-comment, non-decorator top-level statement before a matching handler or end-of-file makes the directive orphaned
 - Unknown tokens after the path are rejected in v0.1
@@ -282,6 +284,7 @@ Stable ordering:
 - `directive_column`
 - `handler_line`
 - `handler_column`
+- `handler_kind` (`function` or `struct`)
 
 Duplicate identity is `(method, normalized_path)`.
 
@@ -385,8 +388,9 @@ Required marker:
 - Start with CLI-only configuration
 - Add Pixi tasks for testing, formatting, and generation
 - Provide `conda.recipe/recipe.yaml`
-- Follow the `heat-url` pattern of pinned commit-based source in recipes
+- In-repo CI builds the recipe from a path source (`path: ..`). A modular-community recipe should switch to `git` + `rev` the way `heat-url` does.
 - Pin compiler versions narrowly in CI and packaging
+- Install Flare from git `main` in Pixi. The published pixi-build package for Flare `v0.10.0` cannot be installed with Pixi `0.70.2`. The conda recipe does not depend on Flare; generated applications still import `flare.http`.
 
 ## Rejected alternatives
 
@@ -408,6 +412,7 @@ If Mojo later gains stable user-defined decorators, retain the internal discover
 4. `generate`/`check`, atomic output, and formatter integration
 5. Flare compile integration
 6. packaging, CI, and documentation
+7. typed extractors via existing Flare `Extracted[H]` APIs
 
 ## Milestone files
 
@@ -417,3 +422,4 @@ If Mojo later gains stable user-defined decorators, retain the internal discover
 - `specs/milestones/04-generate-check-atomic-output.md`
 - `specs/milestones/05-flare-integration.md`
 - `specs/milestones/06-packaging-ci-docs.md`
+- `specs/milestones/07-struct-handlers.md`

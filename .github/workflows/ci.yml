@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: C linker
+        run: sudo apt-get update && sudo apt-get install -y gcc
+      - uses: prefix-dev/setup-pixi@v0.8.8
+        with:
+          pixi-version: v0.70.2
+      - name: Format
+        run: pixi run fmt-check
+      - name: Tests
+        run: pixi run test
+      - name: Fixture freshness
+        run: pixi run check-fixture
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: C linker
+        run: sudo apt-get update && sudo apt-get install -y gcc
+      - name: Build conda package
+        uses: prefix-dev/rattler-build-action@v0.2.38
+        with:
+          recipe-path: conda.recipe/recipe.yaml
+          build-args: >-
+            -c https://conda.modular.com/max
+            -c conda-forge
+            -c https://repo.prefix.dev/modular-community

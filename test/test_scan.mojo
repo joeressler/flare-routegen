@@ -6,7 +6,11 @@ from std.testing import assert_equal, assert_true, TestSuite
 from flare_routegen.diagnostics import FRG005, FRG006, FRG007
 from flare_routegen.discover import discover_routes
 from flare_routegen.module_map import module_path_for_file
-from flare_routegen.models import ScanFileResult
+from flare_routegen.models import (
+    HANDLER_KIND_FUNCTION,
+    HANDLER_KIND_STRUCT,
+    ScanFileResult,
+)
 from flare_routegen.scan import scan_file_content
 
 comptime PROBE_ROOT = "test/fixtures/probes/association"
@@ -28,6 +32,7 @@ def test_valid_basic_binds_home() raises:
     assert_equal(result.routes[0].method, "GET")
     assert_equal(result.routes[0].path, "/")
     assert_equal(result.routes[0].handler_symbol, "home")
+    assert_equal(result.routes[0].handler_kind, HANDLER_KIND_FUNCTION)
 
 
 def test_blank_lines_and_comments_bind() raises:
@@ -86,6 +91,39 @@ def test_indented_directive_reports_frg007() raises:
     assert_equal(len(result.routes), 0)
     assert_true(len(result.diagnostics) >= 1)
     assert_equal(result.diagnostics[0].code, FRG007)
+
+
+def test_struct_handler_binds_get_user() raises:
+    var result = scan_fixture("struct_handler.mojo")
+    assert_equal(len(result.routes), 1)
+    assert_equal(result.routes[0].method, "GET")
+    assert_equal(result.routes[0].path, "/users/:id")
+    assert_equal(result.routes[0].handler_symbol, "GetUser")
+    assert_equal(result.routes[0].handler_kind, HANDLER_KIND_STRUCT)
+
+
+def test_fieldwise_init_struct_binds() raises:
+    var result = scan_fixture("fieldwise_init_struct.mojo")
+    assert_equal(len(result.routes), 1)
+    assert_equal(result.routes[0].handler_symbol, "GetUser")
+    assert_equal(result.routes[0].handler_kind, HANDLER_KIND_STRUCT)
+
+
+def test_multiple_directives_struct_bind_twice() raises:
+    var result = scan_fixture("multiple_directives_struct.mojo")
+    assert_equal(len(result.routes), 2)
+    assert_equal(result.routes[0].method, "GET")
+    assert_equal(result.routes[1].method, "HEAD")
+    assert_equal(result.routes[0].handler_symbol, "GetUser")
+    assert_equal(result.routes[0].handler_kind, HANDLER_KIND_STRUCT)
+    assert_equal(result.routes[1].handler_kind, HANDLER_KIND_STRUCT)
+
+
+def test_nested_struct_binds_outer() raises:
+    var result = scan_fixture("nested_struct.mojo")
+    assert_equal(len(result.routes), 1)
+    assert_equal(result.routes[0].handler_symbol, "Outer")
+    assert_equal(result.routes[0].handler_kind, HANDLER_KIND_STRUCT)
 
 
 def test_duplicate_on_handler_reports_frg005() raises:

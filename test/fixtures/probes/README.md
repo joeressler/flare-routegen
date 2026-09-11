@@ -19,8 +19,8 @@ Evidence lives in the Flare release at `v0.10.0` and in
 ### Probe 4 (annotation scanner)
 
 Association rule: each top-level `# @flare.route <METHOD> <PATH>` directive binds
-to the **next top-level** `def`, allowing blank lines, ordinary comments, and
-top-level decorators between them.
+to the **next top-level** `def` or `struct`, allowing blank lines, ordinary
+comments, and top-level decorators between them.
 
 ### Probe 5 (determinism)
 

@@ -4,10 +4,13 @@ from flare_routegen.diagnostics import Diagnostic
 from flare_routegen.discover import join_lines, sort_routes
 from flare_routegen.models import DiscoveredRoute
 from flare_routegen.module_map import (
+    any_struct_handler,
     handler_import_alias,
     handler_wrapper_name,
+    is_struct_handler,
     unique_handlers_sorted,
     validate_handler_aliases,
+    wrapper_call_line,
 )
 from flare_routegen.render_comptime import quote_path
 
@@ -29,6 +32,22 @@ def runtime_register_call(
     )
 
 
+def runtime_extracted_register_call(
+    method: String, path: String, import_alias: String
+) -> String:
+    return (
+        "    router."
+        + method.lower()
+        + "[Extracted["
+        + import_alias
+        + "]]("
+        + quote_path(path)
+        + ", Extracted["
+        + import_alias
+        + "]())"
+    )
+
+
 def render_runtime(
     routes: List[DiscoveredRoute],
 ) raises -> Tuple[String, List[Diagnostic]]:
@@ -45,7 +64,13 @@ def render_runtime(
     lines.append(GENERATED_MARKER_1)
     lines.append(GENERATED_MARKER_2)
     lines.append("")
-    lines.append("from flare.http import Method, Request, Response, Router")
+    if any_struct_handler(sorted_routes):
+        lines.append(
+            "from flare.http import Extracted, Method, Request, Response,"
+            " Router"
+        )
+    else:
+        lines.append("from flare.http import Method, Request, Response, Router")
 
     var handlers = unique_handlers_sorted(sorted_routes)
     for handler in handlers:
@@ -65,14 +90,27 @@ def render_runtime(
     for handler in handlers:
         var module_path = handler[0]
         var handler_symbol = handler[1]
+        var handler_kind = handler[2]
+        if is_struct_handler(handler_kind):
+            continue
         var import_alias = handler_import_alias(module_path, handler_symbol)
         var wrapper = handler_wrapper_name(module_path, handler_symbol)
         lines.append("def " + wrapper + "(req: Request) raises -> Response:")
-        lines.append("    return " + import_alias + "(req)")
+        lines.append(wrapper_call_line(import_alias, handler_kind))
         lines.append("")
 
     lines.append("def register_routes(mut router: Router) raises -> None:")
     for route in sorted_routes:
+        var import_alias = handler_import_alias(
+            route.module_path, route.handler_symbol
+        )
+        if is_struct_handler(route.handler_kind):
+            lines.append(
+                runtime_extracted_register_call(
+                    route.method, route.path, import_alias
+                )
+            )
+            continue
         var wrapper = handler_wrapper_name(
             route.module_path, route.handler_symbol
         )

@@ -9,11 +9,23 @@ name = "flare-routegen"
 description = "Generate Flare route registrations from structured Mojo comment directives."
 platforms = ["linux-64", "osx-arm64"]
 version = "0.1.0"
+preview = ["pixi-build"]
 
 [dependencies]
 mojo = ">=1.0.0,<1.1.0"
+# Flare from git `main`. The published pixi-build package for Flare v0.10.0
+# cannot be installed with Pixi 0.70.2 (PIXI_PIN_CI).
+flare = { git = "https://github.com/ehsanmok/flare.git", branch = "main" }
+
+[target.linux-64.dependencies]
+gxx = ">=13"
+sysroot_linux-64 = ">=2.34"
 
 [tasks]
 flare-routegen = "mojo run -I src src/main.mojo"
 test = "bash scripts/run-tests.sh"
-fmt = "mojo format src test/test_*.mojo test/fixtures/module_map test/fixtures/app_basic test/fixtures/app_invalid test/fixtures/probes"
+fmt = "mojo format src test/test_*.mojo test/fixtures/module_map test/fixtures/app_basic test/fixtures/app_invalid test/fixtures/probes examples"
+fmt-check = "bash scripts/fmt-check.sh"
+generate-fixture = "mojo run -I src src/main.mojo generate --source examples/fixture_app/src --package my_app --output examples/fixture_app/src/my_app/_generated_routes.mojo"
+check-fixture = "mojo run -I src src/main.mojo check --source examples/fixture_app/src --package my_app --output examples/fixture_app/src/my_app/_generated_routes.mojo"
+run-fixture = "mojo run -I examples/fixture_app/src examples/fixture_app/src/main.mojo"

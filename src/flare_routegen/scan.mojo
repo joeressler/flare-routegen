@@ -13,6 +13,8 @@ from flare_routegen.grammar import (
 )
 from flare_routegen.models import (
     DiscoveredRoute,
+    HANDLER_KIND_FUNCTION,
+    HANDLER_KIND_STRUCT,
     PendingDirective,
     ScanFileResult,
 )
@@ -47,20 +49,36 @@ def is_comment_line(line: String) -> Bool:
     return line.lstrip(" \t").startswith("#")
 
 
-def extract_def_name(line: String) -> Optional[String]:
+def extract_declaration_name(line: String, keyword: String) -> Optional[String]:
+    """Pull the identifier after a top-level `def` or `struct` keyword."""
     var stripped = String(line.lstrip(" \t"))
-    if not stripped.startswith("def "):
+    if not stripped.startswith(keyword):
         return Optional[String]()
-    var rest = text_drop_prefix(stripped, 4)
+    var rest = text_drop_prefix(stripped, text_len(keyword))
     var end = 0
     while end < text_len(rest):
         var ch = text_char_at(rest, end)
-        if ch == "(" or ch == " " or ch == "\t":
+        if ch == "(" or ch == "[" or ch == ":" or ch == " " or ch == "\t":
             break
         end += 1
     if end == 0:
         return Optional[String]()
     return Optional[String](text_slice(rest, 0, end))
+
+
+def extract_handler_binding(line: String) -> Optional[Tuple[String, String]]:
+    """Return `(symbol, kind)` for the next bindable top-level handler."""
+    var def_name = extract_declaration_name(line, "def ")
+    if def_name:
+        return Optional[Tuple[String, String]](
+            (def_name.value(), HANDLER_KIND_FUNCTION)
+        )
+    var struct_name = extract_declaration_name(line, "struct ")
+    if struct_name:
+        return Optional[Tuple[String, String]](
+            (struct_name.value(), HANDLER_KIND_STRUCT)
+        )
+    return Optional[Tuple[String, String]]()
 
 
 def count_delimiter(line: String, delimiter: String) -> Int:
@@ -97,7 +115,10 @@ def orphan_pending(
                 item.directive_line,
                 item.directive_column,
                 "route directive is not followed by a top-level handler",
-                "place the directive immediately before the handler `def`",
+                (
+                    "place the directive immediately before a top-level `def`"
+                    " or `struct`"
+                ),
             )
         )
     pending.clear()
@@ -108,6 +129,7 @@ def bind_pending(
     handler_symbol: String,
     handler_line: Int,
     handler_column: Int,
+    handler_kind: String,
     module_path: String,
     source_path: String,
     mut routes: List[DiscoveredRoute],
@@ -144,6 +166,7 @@ def bind_pending(
                 item.directive_column,
                 handler_line,
                 handler_column,
+                handler_kind,
             )
         )
     pending.clear()
@@ -180,7 +203,7 @@ def scan_file_content(
                         "route directive must be at top level",
                         (
                             "move the directive to column 1 before a top-level"
-                            " `def`"
+                            " `def` or `struct`"
                         ),
                     )
                 )
@@ -217,13 +240,15 @@ def scan_file_content(
         if is_decorator_line(line):
             continue
 
-        var handler_name = extract_def_name(line)
-        if handler_name:
+        var binding = extract_handler_binding(line)
+        if binding:
+            var bound = binding.value()
             bind_pending(
                 pending,
-                handler_name.value(),
+                bound[0],
                 one_based_line,
                 indent + 1,
+                bound[1],
                 module_path,
                 source_path,
                 routes,

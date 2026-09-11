@@ -4,7 +4,7 @@ from std.testing import assert_equal, assert_true, TestSuite
 
 from flare_routegen.diagnostics import Diagnostic, FRG009, FRG010, FRG011
 from flare_routegen.discover import discover_routes
-from flare_routegen.models import DiscoveredRoute
+from flare_routegen.models import DiscoveredRoute, HANDLER_KIND_FUNCTION
 from flare_routegen.module_map import (
     MappedSourceFile,
     handler_import_alias,
@@ -90,6 +90,7 @@ def test_alias_collision_reports_frg011() raises:
             1,
             2,
             1,
+            HANDLER_KIND_FUNCTION,
         )
     )
     routes.append(
@@ -104,6 +105,7 @@ def test_alias_collision_reports_frg011() raises:
             1,
             2,
             1,
+            HANDLER_KIND_FUNCTION,
         )
     )
     var diagnostics = validate_handler_aliases(routes)

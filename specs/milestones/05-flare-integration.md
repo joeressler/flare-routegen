@@ -28,7 +28,7 @@ Prove that the chosen generated form works with pinned released Flare across rea
 
 ```bash
 pixi run flare-routegen -- generate --source examples/fixture_app/src --package my_app --output examples/fixture_app/src/my_app/_generated_routes.mojo
-pixi run mojo run -I examples/fixture_app/src examples/fixture_app/src/my_app/app.mojo
+pixi run mojo run -I examples/fixture_app/src examples/fixture_app/src/main.mojo
 pixi run test
 ```
 

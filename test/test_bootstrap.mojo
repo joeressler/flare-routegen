@@ -22,7 +22,7 @@ def test_version_constant() raises:
 def test_pin_constants_match_spec() raises:
     assert_equal(MOJO_PIN_CI, "1.0.0")
     assert_equal(MOJO_RANGE, ">=1.0.0,<1.1.0")
-    assert_equal(FLARE_PIN_CI, "v0.10.0")
+    assert_equal(FLARE_PIN_CI, "main")
     assert_equal(FLARE_RANGE, ">=0.10.0,<0.11.0")
     assert_equal(PIXI_PIN_CI, "0.70.2")
 

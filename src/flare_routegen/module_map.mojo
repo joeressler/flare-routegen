@@ -7,7 +7,10 @@ from flare_routegen.diagnostics import (
     FRG011,
     make_diagnostic,
 )
-from flare_routegen.models import DiscoveredRoute
+from flare_routegen.models import (
+    DiscoveredRoute,
+    HANDLER_KIND_STRUCT,
+)
 from flare_routegen.text_util import remove_extension, text_len, text_slice
 
 
@@ -220,15 +223,17 @@ def validate_handler_aliases(
 
 def unique_handlers_sorted(
     routes: List[DiscoveredRoute],
-) raises -> List[Tuple[String, String]]:
-    var handlers = List[Tuple[String, String]]()
+) raises -> List[Tuple[String, String, String]]:
+    var handlers = List[Tuple[String, String, String]]()
     var seen = Dict[String, Bool]()
     for route in routes:
         var key = route.module_path + "\t" + route.handler_symbol
         if key in seen:
             continue
         seen[key] = True
-        handlers.append((route.module_path, route.handler_symbol))
+        handlers.append(
+            (route.module_path, route.handler_symbol, route.handler_kind)
+        )
 
     var count = len(handlers)
     for i in range(count):
@@ -240,3 +245,21 @@ def unique_handlers_sorted(
                 handlers[i] = handlers[j]
                 handlers[j] = tmp
     return handlers^
+
+
+def is_struct_handler(handler_kind: String) -> Bool:
+    return handler_kind == HANDLER_KIND_STRUCT
+
+
+def any_struct_handler(routes: List[DiscoveredRoute]) -> Bool:
+    for route in routes:
+        if is_struct_handler(route.handler_kind):
+            return True
+    return False
+
+
+def wrapper_call_line(import_alias: String, handler_kind: String) -> String:
+    """Emit the wrapper body call for a function or Extracted struct handler."""
+    if is_struct_handler(handler_kind):
+        return "    return Extracted[" + import_alias + "]().serve(req)"
+    return "    return " + import_alias + "(req)"

@@ -2,6 +2,9 @@
 
 from flare_routegen.diagnostics import Diagnostic
 
+comptime HANDLER_KIND_FUNCTION = "function"
+comptime HANDLER_KIND_STRUCT = "struct"
+
 
 @fieldwise_init
 struct DiscoveredRoute(Copyable, Movable):
@@ -17,6 +20,7 @@ struct DiscoveredRoute(Copyable, Movable):
     var directive_column: Int
     var handler_line: Int
     var handler_column: Int
+    var handler_kind: String
 
     def format_list_row(self) -> String:
         return (
