@@ -1,0 +1,8 @@
+# Expected: bind both directives to `show_user`.
+
+# @flare.route GET /users/:id
+# @flare.route HEAD /users/:id
+
+
+def show_user(req: String) -> String:
+    return req
