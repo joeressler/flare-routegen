@@ -10,6 +10,9 @@ source:
 
 build:
   number: 0
+  skip:
+    - osx
+    - win
   script:
     - mkdir -p ${{ PREFIX }}/bin
     - mojo build -I src src/main.mojo -o ${{ PREFIX }}/bin/flare-routegen
@@ -19,19 +22,15 @@ requirements:
     - mojo-compiler =1.0.0
   build:
     - mojo-compiler =1.0.0
-    - if: linux
-      then:
-        - gxx >=13
-        - sysroot_linux-64 >=2.34
+    - gxx >=13
+    - sysroot_linux-64 >=2.34
   run:
     - ${{ pin_compatible('mojo-compiler') }}
 
 tests:
   - script:
-      - if: unix
-        then:
-          - flare-routegen --version
-          - flare-routegen --help
+      - flare-routegen --version
+      - flare-routegen --help
 
 about:
   homepage: https://github.com/joeressler/flare-routegen
@@ -42,6 +41,6 @@ about:
 
 extra:
   maintainers:
-    - flare-routegen contributors
+    - joeressler
   project_name:
     - flare-routegen

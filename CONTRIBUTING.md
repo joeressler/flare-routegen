@@ -10,7 +10,8 @@ contexts here. Keep user source valid Mojo; never rewrite it.
 
 ## Setup
 
-Requires [Pixi](https://pixi.sh/) and a C linker (`gcc` on Linux).
+Requires [Pixi](https://pixi.sh/) and a C linker (`gcc`). Development, CI, and
+the conda recipe target **linux-64** only.
 
 ```bash
 pixi install
@@ -86,8 +87,8 @@ Do not reuse or renumber codes.
 
 ## Packaging
 
-[`conda.recipe/recipe.yaml`](conda.recipe/recipe.yaml) builds a CLI with
-`mojo build`. In-repo CI uses `source.path`. A
+[`conda.recipe/recipe.yaml`](conda.recipe/recipe.yaml) builds a linux-64 CLI
+with `mojo build` (`skip: osx` and `win`). In-repo CI uses `source.path`. A
 [modular-community](https://github.com/modular/modular-community) listing needs
 the git URL and a full commit SHA instead. The recipe must not depend on a
 Flare conda package.
